@@ -2,12 +2,12 @@
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -251,8 +251,8 @@ namespace Obsidian.Util
                     packetId = await packetStream.ReadVarIntAsync();
                     int arlen = 0;
 
-                    if (length - packetId.GetVarintLength() > -1)
-                        arlen = length - packetId.GetVarintLength();
+                    if (length - packetId.GetVarIntLength() > -1)
+                        arlen = length - packetId.GetVarIntLength();
 
                     packetData = new byte[arlen];
                     await packetStream.ReadAsync(packetData, 0, packetData.Length);

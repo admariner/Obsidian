@@ -134,123 +134,41 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task WriteByteAsync(sbyte value)
+        public async Task WriteByteAsync(sbyte value) => await this.WriteUnsignedByteAsync((byte)value);
+
+        public async Task WriteUnsignedByteAsync(byte value) => await this.WriteAsync(new[] { value });
+
+        public async Task WriteBooleanAsync(bool value) => await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
+
+        public async Task WriteUnsignedShortAsync(ushort value) => await this.WriteAsync(ReverseIfLittleEndian(BitConverter.GetBytes(value)));
+
+        public async Task WriteShortAsync(short value) => await this.WriteAsync(ReverseIfLittleEndian(BitConverter.GetBytes(value)));
+
+        public async Task WriteIntAsync(int value) => await this.WriteAsync(ReverseIfLittleEndian(BitConverter.GetBytes(value)));
+
+        /// <summary>
+        /// Reverses the <paramref name="input"/> byte array, if <see cref="BitConverter.IsLittleEndian"/> is true.
+        /// </summary>
+        /// <param name="input">The byte array to be checked</param>
+        /// <returns>The (reversed) byte array</returns>
+        public byte[] ReverseIfLittleEndian(byte[] input)
         {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Byte (0x{value.ToString("X")})");
-#endif
-
-            await this.WriteUnsignedByteAsync((byte)value);
-        }
-
-        public async Task WriteUnsignedByteAsync(byte value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing unsigned Byte (0x{value.ToString("X")})");
-#endif
-
-            await this.WriteAsync(new[] { value });
-        }
-
-        public async Task WriteBooleanAsync(bool value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Boolean ({value})");
-#endif
-
-            await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
-        }
-
-        public async Task WriteUnsignedShortAsync(ushort value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing unsigned Short ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(write);
+                Array.Reverse(input);
             }
-            await this.WriteAsync(write);
+
+            return input;
         }
 
-        public async Task WriteShortAsync(short value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Short ({value})");
-#endif
+        public async Task WriteLongAsync(long value) => await this.WriteAsync(ReverseIfLittleEndian(BitConverter.GetBytes(value)));
 
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
+        public async Task WriteFloatAsync(float value) => await this.WriteAsync(ReverseIfLittleEndian(BitConverter.GetBytes(value)));
 
-        public async Task WriteIntAsync(int value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Int ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteLongAsync(long value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Long ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteFloatAsync(float value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Float ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteDoubleAsync(double value)
-        {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Double ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
+        public async Task WriteDoubleAsync(double value) => await this.WriteAsync(ReverseIfLittleEndian(BitConverter.GetBytes(value)));
 
         public async Task WriteStringAsync(string value, int maxLength = 0)
         {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing String ({value})");
-#endif
-
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
@@ -260,7 +178,8 @@ namespace Obsidian.Net
             {
                 throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
             }
-            var bytes = Encoding.UTF8.GetBytes(value);
+
+            byte[] bytes = Encoding.UTF8.GetBytes(value);
             await this.WriteVarIntAsync(bytes.Length);
             await this.WriteAsync(bytes);
         }
@@ -273,10 +192,6 @@ namespace Obsidian.Net
 
         public async Task WriteVarIntAsync(int value)
         {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing VarInt ({value})");
-#endif
-
             uint v = (uint)value;
 
             do
@@ -339,10 +254,6 @@ namespace Obsidian.Net
 
         public async Task WriteVarLongAsync(long value)
         {
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing VarLong ({value})");
-#endif
-
             ulong v = (ulong)value;
 
             do
@@ -379,7 +290,7 @@ namespace Obsidian.Net
 
         public async Task<byte> ReadUnsignedByteAsync()
         {
-            var buffer = new byte[1];
+            byte[] buffer = new byte[1];
             await this.ReadAsync(buffer);
             return buffer[0];
         }
@@ -403,90 +314,58 @@ namespace Obsidian.Net
 
         public async Task<ushort> ReadUnsignedShortAsync()
         {
-            var buffer = new byte[2];
+            byte[] buffer = new byte[2];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToUInt16(buffer);
+            return BitConverter.ToUInt16(ReverseIfLittleEndian(buffer));
         }
 
         public async Task<short> ReadShortAsync()
         {
             var buffer = new byte[2];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt16(buffer);
+            return BitConverter.ToInt16(ReverseIfLittleEndian(buffer));
         }
 
         public async Task<int> ReadIntAsync()
         {
             var buffer = new byte[4];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt32(buffer);
+            return BitConverter.ToInt32(ReverseIfLittleEndian(buffer));
         }
 
         public async Task<long> ReadLongAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt64(buffer);
+            return BitConverter.ToInt64(ReverseIfLittleEndian(buffer));
         }
 
         public async Task<ulong> ReadUnsignedLongAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToUInt64(buffer);
+            return BitConverter.ToUInt64(ReverseIfLittleEndian(buffer));
         }
 
         public async Task<float> ReadFloatAsync()
         {
             var buffer = new byte[4];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToSingle(buffer);
+            return BitConverter.ToSingle(ReverseIfLittleEndian(buffer));
         }
 
         public async Task<double> ReadDoubleAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToDouble(buffer);
+            return BitConverter.ToDouble(ReverseIfLittleEndian(buffer));
         }
 
         public async Task<string> ReadStringAsync(int maxLength = 0)
         {
             var length = await this.ReadVarIntAsync();
             var buffer = new byte[length];
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            await this.ReadAsync(buffer, 0, length);
+            await this.ReadAsync(ReverseIfLittleEndian(buffer), 0, length);
 
             var value = Encoding.UTF8.GetString(buffer);
             if (maxLength > 0 && value.Length > maxLength)
@@ -511,10 +390,16 @@ namespace Obsidian.Net
         public async Task<string> ReadIdentifierAsync()
         {
             var identifier = await this.ReadStringAsync();
-            if (identifier.Length > 32767) throw new ArgumentException("string provided by stream exceeded maximum length", nameof(BaseStream));
+
+            if (identifier.Length > 32767)
+            {
+                throw new ArgumentException("string provided by stream exceeded maximum length", nameof(BaseStream));
+            }
+
             return identifier;
         }
 
+        /// <exception cref="InvalidOperationException">Thrown if received VarInt is too big</exception>
         public virtual async Task<int> ReadVarIntAsync()
         {
             int numRead = 0;
