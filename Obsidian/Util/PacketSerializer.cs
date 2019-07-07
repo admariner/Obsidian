@@ -1,4 +1,5 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using System;
@@ -13,6 +14,12 @@ namespace Obsidian.Util
 {
     public static class PacketSerializer
     {
+#if DEBUG
+        private static readonly Logger Logger = new Logger("Packet Serializer", LogLevel.Debug);
+#else
+        private static Logger Logger = new Logger("Packet Serializer", LogLevel.Error);
+#endif
+
         private class Variable
         {
             public Variable(object info, VariableAttribute attribute)
@@ -214,7 +221,11 @@ namespace Obsidian.Util
             {
                 foreach (Variable variable in variables)
                 {
-                    dynamic value = await ReadAsync(stream, variable.Attribute, variable.Type);
+                    object value = await ReadAsync(stream, variable.Attribute, variable.Type);
+
+#if PACKETDEBUG
+                    Logger.LogDebug($"[DA] {variable.Info} => {value} ({value.GetType().ToString()})");
+#endif
 
                     variable.SetValue(packet, value);
                 }

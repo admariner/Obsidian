@@ -523,7 +523,7 @@ namespace Obsidian.Net
             do
             {
                 read = await this.ReadUnsignedByteAsync();
-                int value = read & 0b01111111;
+                int value = read & 127;
                 result |= value << (7 * numRead);
 
                 numRead++;
@@ -531,7 +531,7 @@ namespace Obsidian.Net
                 {
                     throw new InvalidOperationException("VarInt is too big");
                 }
-            } while ((read & 0b10000000) != 0);
+            } while ((read & 128) != 0);
 
             return result;
         }

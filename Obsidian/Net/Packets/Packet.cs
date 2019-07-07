@@ -30,7 +30,7 @@ namespace Obsidian.Net.Packets
 
         public async Task WriteToStreamAsync(MinecraftStream inStream, MinecraftStream outStream)
         {
-            int packetLength = this.PacketData.Length + this.PacketId.GetVarintLength();
+            int packetLength = this.PacketData.Length + this.PacketId.GetVarIntLength();
 
 #if PACKETLOG
             Program.PacketLogger.LogDebug($"<< 0x{PacketId.ToString("X")}, length {packetLength}");

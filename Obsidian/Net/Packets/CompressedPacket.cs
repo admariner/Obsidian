@@ -20,7 +20,7 @@ namespace Obsidian.Net.Packets
         //Are we ever gonna use this?
         public new async Task WriteToStreamAsync(MinecraftStream stream)
         {
-            var packetLength = this.PacketId.GetVarintLength() + this.PacketData.Length;
+            var packetLength = this.PacketId.GetVarIntLength() + this.PacketData.Length;
             // compress data
             using (var memstr = new MinecraftStream())
             {
@@ -52,7 +52,7 @@ namespace Obsidian.Net.Packets
                 dataLen = await mstream.ReadVarIntAsync();
 
                 // read compressed data
-                var compdata = new byte[len - dataLen.GetVarintLength()];
+                var compdata = new byte[len - dataLen.GetVarIntLength()];
                 await stream.ReadAsync(compdata, 0, len);
 
                 // decompress data
@@ -65,8 +65,8 @@ namespace Obsidian.Net.Packets
                     packetId = await mstream.ReadVarIntAsync();
 
                     int arlen = 0;
-                    if (dataLen - packetId.GetVarintLength() > -1)
-                        arlen = len - packetId.GetVarintLength();
+                    if (dataLen - packetId.GetVarIntLength() > -1)
+                        arlen = len - packetId.GetVarIntLength();
 
                     theData = new byte[arlen];
                     await memstr.ReadAsync(theData, 0, theData.Length);

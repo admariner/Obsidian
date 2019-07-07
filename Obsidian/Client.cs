@@ -250,8 +250,13 @@ namespace Obsidian
                 Packet packet = this.Compressed ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
                 Packet returnPacket;
 
+                if (packet.Empty)
+                    continue; //Ignoring that packet
+
                 if (this.State == ClientState.Play && packet.PacketData.Length < 1)
                     this.Disconnect();
+
+                Logger.LogDebug($"Got Packet: S:{this.State} I:{packet.PacketId}");
 
                 switch (this.State)
                 {
@@ -545,7 +550,7 @@ namespace Obsidian
                     await packet.WriteToStreamAsync(stream, this.MinecraftStream);
                 }
 
-                skip:
+            skip:
                 return;
             }
         }
