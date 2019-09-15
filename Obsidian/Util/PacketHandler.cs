@@ -1,9 +1,12 @@
-﻿using Obsidian.Entities;
+﻿using Newtonsoft.Json;
+using Obsidian.Entities;
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
+using Org.BouncyCastle.Asn1.Crmf;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -31,6 +34,18 @@ namespace Obsidian.Util
 
             if (stream != null)
                 await packet.WriteToStreamAsync(stream);
+
+            string fileName = $@"export\{packet.GetType().FullName}";
+            using (var fileStream = File.OpenWrite(fileName + ".bin"))
+            using (var minecraftStream = new MinecraftStream(fileStream))
+            {
+                await packet.WriteToStreamAsync(minecraftStream);
+            }
+            await File.WriteAllTextAsync(fileName + ".json", JsonConvert.SerializeObject(packet,
+            new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }));
 
             return (T)packet;
         }
